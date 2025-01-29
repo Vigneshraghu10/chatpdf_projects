@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Chat Interface</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background-color: #f5f5f5;
+        }
+
+        .header {
+            background-color: #ffffff;
+            padding: 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .logo {
+            position: absolute;
+            left: 60px;
+            width: 150px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            margin-left:20px;
+        }
+
+        .page-title {
+            text-align: center;
+            flex-grow: 1;
+            font-size: 2rem;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .main-container {
+            display: flex;
+            flex: 1;
+            padding: 1rem;
+            gap: 1rem;
+            height: calc(100vh - 72px);
+        }
+
+        .document-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .upload-section {
+            padding: 1rem;
+            border-bottom: 1px solid #eee;
+        }
+
+        .pdf-viewer {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            background: #f8f9fa;
+            position: relative;
+        }
+
+        #pdfContainer {
+            width: 100%;
+            min-height: 800px;
+            background: white;
+        }
+
+        .chat-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .button-group {
+            padding: 1rem;
+            display: flex;
+            gap: 0.5rem;
+            border-bottom: 1px solid #eee;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.3s;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 2rem;
+            background: #f8f9fa;
+        }
+
+        .message {
+            margin-bottom: 1rem;
+            padding: 1rem;
+            border-radius: 8px;
+            max-width: 80%;
+        }
+
+        .user-message {
+            background: #007bff;
+            color: white;
+            margin-left:500px;
+        }
+
+        .bot-message {
+            background: white;
+            border: 1px solid #ddd;
+        }
+
+        .chat-input {
+            padding: 1rem;
+            border-top: 1px solid #eee;
+            display: flex;
+            gap: 0.5rem;
+
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        .citation {
+            font-size: 0.85rem;
+            color: #2c5282;
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            background: #ebf8ff;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: background-color 0.2s;
+        }
+
+        .citation:hover {
+            background: #bee3f8;
+        }
+
+        .citation-page {
+            font-weight: 600;
+            padding: 2px 6px;
+            background: #4299e1;
+            color: white;
+            border-radius: 3px;
+        }
+
+        .page-controls {
+            padding: 0.5rem;
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            align-items: center;
+            background: #fff;
+            border-bottom: 1px solid #eee;
+        }
+
+        #pageNumber {
+            width: 50px;
+            text-align: center;
+        }
+
+        .search-results {
+            border: 1px solid #ddd;
+            padding: 1rem;
+            margin-top: 0.5rem;
+            border-radius: 4px;
+            background: white;
+        }
+
+        .search-result-item {
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #eee;
+        }
+
+        .search-result-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .spinner-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .spinner-label {
+            position: absolute;
+            margin-top: 70px;
+            font-weight: 500;
+            color: #2d3748;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .highlight-citation {
+            position: absolute;
+            background-color: rgba(255, 223, 0, 0.4);
+            pointer-events: none;
+            transition: all 0.3s ease;
+            border: 2px solid rgba(255, 140, 0, 0.7);
+            border-radius: 3px;
+            box-shadow: 0 0 8px rgba(255, 140, 0, 0.4);
+        }
+
+        .highlight-citation.active {
+            background-color: rgba(255, 140, 0, 0.5);
+            border-color: rgba(255, 69, 0, 0.9);
+            box-shadow: 0 0 12px rgba(255, 140, 0, 0.6);
+        }
+
+        .highlight-wrapper {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .source-highlight-controls {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgb(51, 185, 21);
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            gap: 10px;
+            z-index: 100;
+        }
+
+        .source-counter {
+            background: #4299e1;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+        }
+
+        .drag-over {
+            border: 2px dashed #007bff;
+            background-color: rgba(0, 123, 255, 0.1);
+        }
+
+        .zoom-controls {
+            position: absolute;
+            right: 1rem;
+            bottom: 1rem;
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .zoom-btn {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .zoom-btn:hover {
+            background-color: #f0f0f0;
+        }
+
+        @media print {
+            .chat-section {
+                display: none;
+            }
+
+            .document-section {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                flex-direction: column;
+            }
+
+            .document-section,
+            .chat-section {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header flex items-center justify-between px-4 py-2">
+        <div class="logo">
+            <img src="https://smartificia.com/assets/img/smartificia-logo.png" alt="Your Company Logo" style="width: 300px; height: auto;">
+        </div>
+        <div class="page-title">Smart Docs Chat</div>
+    </header>
+
+    <div class="main-container">
+        <div class="document-section">
+            <div class="upload-section">
+                <input type="file" id="fileUpload" accept=".pdf,.docx" style="display: none;">
+                <button class="btn btn-primary" onclick="document.getElementById('fileUpload').click()">
+                    Upload Document
+                </button>
+            </div>
+            <div class="page-controls">
+                <button class="btn btn-secondary" id="prevPage">Previous</button>
+                <input type="number" id="pageNumber" min="1" value="1">
+                <span>of <span id="pageCount">1</span></span>
+                <button class="btn btn-secondary" id="nextPage">Next</button>
+            </div>
+            <div class="pdf-viewer">
+                <canvas id="pdfContainer"></canvas>
+            </div>
+        </div>
+
+        <div class="chat-section">
+            <div class="button-group">
+                <button class="btn btn-primary" id="docChatBtn">Document Chat</button>
+                <button class="btn btn-secondary" id="webSearchBtn">Web Search</button>
+                <button class="btn btn-danger" id="clearBtn">Clear</button>
+            </div>
+            <div class="chat-messages" id="chatMessages"></div>
+            <div class="chat-input">
+                <input type="text" id="messageInput" placeholder="Type your message...">
+                <button class="btn btn-primary" id="sendBtn">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="uploadSpinner" class="spinner-overlay" style="display: none;">
+        <div class="spinner"></div>
+        <div class="spinner-label">Uploading document...</div>
+    </div>
+
+    <div id="chatSpinner" class="spinner-overlay" style="display: none;">
+        <div class="spinner"></div>
+        <div class="spinner-label">Processing your question...</div>
+    </div>
+
+    <script>
+        // Initialize state management
+        const state = {
+            currentPdf: null,
+            currentPage: 1,
+            currentScale: 1.5,
+            currentHighlights: [],
+            maxFileSize: 16 * 1024 * 1024, // 16MB
+            allowedFileTypes: ['.pdf', '.docx', '.doc'],
+            highlightColors: {
+                primary: 'rgba(255, 255, 0, 0.3)',
+                secondary: 'rgba(0, 255, 255, 0.2)',
+            }
+        };
+
+        let currentMode = 'doc';
+        let pdfDoc = null;
+        let pageNum = 1;
+        let pageRendering = false;
+        let pageNumPending = null;
+        let scale = 1.5;
+        let canvas = document.getElementById('pdfContainer');
+        let ctx = canvas.getContext('2d');
+
+        // Initialize PDF.js
+        if (typeof pdfjsLib === 'undefined') {
+            console.error('PDF.js library not loaded');
+            alert('Error: PDF.js library not loaded. Please check your internet connection and refresh the page.');
+        }
+
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        class SourceHighlighter {
+            constructor() {
+                this.highlights = [];
+                this.currentHighlightIndex = -1;
+                this.wrapper = null;
+            }
+
+            async highlightSourceText(pageNum, sourceText, isActive = false) {
+                if (!pdfDoc) return;
+
+                try {
+                    const page = await pdfDoc.getPage(pageNum);
+                    const viewport = page.getViewport({ scale });
+                    const textContent = await page.getTextContent();
+
+                    this.getHighlightWrapper(viewport);
+
+                    const textMatches = this.findTextMatches(textContent.items, sourceText);
+
+                    textMatches.forEach(match => {
+                        const highlight = this.createHighlight(match, viewport, isActive);
+                        this.highlights.push({
+                            element: highlight,
+                            pageNum: pageNum,
+                            text: sourceText
+                        });
+                    });
+
+                    this.updateSourceControls();
+                } catch (error) {
+                    console.error('Error highlighting source:', error);
+                }
+            }
+
+            getHighlightWrapper(viewport) {
+                if (!this.wrapper) {
+                    this.wrapper = document.createElement('div');
+                    this.wrapper.className = 'highlight-wrapper';
+                    this.wrapper.style.width = `${viewport.width}px`;
+                    this.wrapper.style.height = `${viewport.height}px`;
+                    document.querySelector('.pdf-viewer').appendChild(this.wrapper);
+            }
+                return this.wrapper;
+            }
+
+            findTextMatches(textItems, sourceText) {
+                const matches = [];
+                const searchText = sourceText.toLowerCase();
+
+                textItems.forEach(item => {
+                    if (item.str.toLowerCase().includes(searchText)) {
+                        matches.push({
+                            transform: item.transform,
+                            width: item.width,
+                            height: item.height,
+                            text: item.str
+                        });
+                    }
+                });
+
+                return matches;
+            }
+
+            createHighlight(match, viewport, isActive) {
+                const transform = viewport.transform(match.transform);
+                const highlight = document.createElement('div');
+                highlight.className = `highlight-citation ${isActive ? 'active' : ''}`;
+                highlight.style.left = `${transform[4]}px`;
+                highlight.style.top = `${transform[5]}px`;
+                highlight.style.width = `${match.width * scale}px`;
+                highlight.style.height = `${match.height * scale}px`;
+                highlight.setAttribute('data-text', match.text);
+
+                this.wrapper.appendChild(highlight);
+                return highlight;
+            }
+
+            clearHighlights() {
+                if (this.wrapper) {
+                    this.wrapper.innerHTML = '';
+                }
+                this.highlights = [];
+                this.currentHighlightIndex = -1;
+                this.updateSourceControls();
+            }
+
+            navigateHighlight(direction) {
+                if (this.highlights.length === 0) return;
+
+                if (this.currentHighlightIndex >= 0) {
+                    this.highlights[this.currentHighlightIndex].element.classList.remove('active');
+                }
+
+                if (direction === 'next') {
+                    this.currentHighlightIndex = (this.currentHighlightIndex + 1) % this.highlights.length;
+                } else {
+                    this.currentHighlightIndex = this.currentHighlightIndex <= 0 ?
+                        this.highlights.length - 1 : this.currentHighlightIndex - 1;
+                }
+
+                const currentHighlight = this.highlights[this.currentHighlightIndex];
+                currentHighlight.element.classList.add('active');
+
+                if (currentHighlight.pageNum !== pageNum) {
+                    navigateToPage(currentHighlight.pageNum);
+                }
+
+                this.updateSourceControls();
+            }
+
+            updateSourceControls() {
+                const controls = document.querySelector('.source-highlight-controls');
+                if (this.highlights.length > 0) {
+                    if (!controls) {
+                        this.createSourceControls();
+                    }
+                    const counter = document.querySelector('.source-counter');
+                    counter.textContent = `${this.currentHighlightIndex + 1}/${this.highlights.length}`;
+                } else if (controls) {
+                    controls.remove();
+                }
+            }
+
+            createSourceControls() {
+                const controls = document.createElement('div');
+                controls.className = 'source-highlight-controls';
+                controls.innerHTML = `
+                    <button class="btn btn-secondary" onclick="sourceHighlighter.navigateHighlight('prev')">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <span class="source-counter">0/0</span>
+                    <button class="btn btn-secondary" onclick="sourceHighlighter.navigateHighlight('next')">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                `;
+                document.body.appendChild(controls);
+            }
+        }
+
+        const sourceHighlighter = new SourceHighlighter();
+
+        // Event Listeners
+        document.getElementById('docChatBtn').addEventListener('click', () => setMode('doc'));
+        document.getElementById('webSearchBtn').addEventListener('click', () => setMode('web'));
+        document.getElementById('clearBtn').addEventListener('click', clearChat);
+        document.getElementById('sendBtn').addEventListener('click', sendMessage);
+        document.getElementById('messageInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+        document.getElementById('fileUpload').addEventListener('change', handleFileUpload);
+        document.getElementById('prevPage').addEventListener('click', () => {
+            if (pageNum <= 1) return;
+            pageNum--;
+            queueRenderPage(pageNum);
+        });
+        document.getElementById('nextPage').addEventListener('click', () => {
+            if (pageNum >= pdfDoc.numPages) return;
+            pageNum++;
+            queueRenderPage(pageNum);
+        });
+        document.getElementById('pageNumber').addEventListener('change', (e) => {
+            const num = parseInt(e.target.value);
+            if (num > 0 && num <= pdfDoc.numPages) {
+                pageNum = num;
+                queueRenderPage(pageNum);
+            }
+        });
+
+        // Handle drag and drop
+        const dropZone = document.querySelector('.document-section');
+
+        dropZone.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            dropZone.classList.add('drag-over');
+        });
+
+        dropZone.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+        });
+
+        dropZone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                document.getElementById('fileUpload').files = files;
+                handleFileUpload({ target: { files: files } });
+            }
+        });
+
+        // Core Functions
+        function setMode(mode) {
+            currentMode = mode;
+            document.getElementById('docChatBtn').classList.toggle('btn-primary', mode === 'doc');
+            document.getElementById('docChatBtn').classList.toggle('btn-secondary', mode !== 'doc');
+            document.getElementById('webSearchBtn').classList.toggle('btn-primary', mode === 'web');
+            document.getElementById('webSearchBtn').classList.toggle('btn-secondary', mode !== 'web');
+            document.getElementById('messageInput').placeholder =
+                mode === 'doc' ? 'Ask a question about the document...' : 'Search the web...';
+        }
+
+        function toggleUploadSpinner(show) {
+            document.getElementById('uploadSpinner').style.display = show ? 'flex' : 'none';
+        }
+
+        function toggleChatSpinner(show) {
+            document.getElementById('chatSpinner').style.display = show ? 'flex' : 'none';
+        }
+
+        async function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (file.size > state.maxFileSize) {
+                addMessage('System', 'Error: File size exceeds 16MB limit');
+                return;
+            }
+
+            const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+            if (!state.allowedFileTypes.includes(fileExtension)) {
+                addMessage('System', 'Error: Invalid file type. Please upload PDF or Word documents.');
+                return;
+            }
+
+            toggleUploadSpinner(true);
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                if (result.status === 'success') {
+                    if (file.type === 'application/pdf') {
+                        const fileReader = new FileReader();
+                        fileReader.onload = async function() {
+                            const typedarray = new Uint8Array(this.result);
+                            loadPdfDocument(typedarray);
+                        };
+                        fileReader.readAsArrayBuffer(file);
+                    }
+                    addMessage('System', 'Document uploaded successfully. You can now ask questions about it.');
+                } else {
+                    addMessage('System', 'Error uploading document: ' + result.error);
+                }
+            } catch (error) {
+                addMessage('System', 'Error uploading document: ' + error.message);
+            } finally {
+                toggleUploadSpinner(false);
+            }
+        }
+
+        async function loadPdfDocument(pdfData) {
+            try {
+                pdfDoc = await pdfjsLib.getDocument({data: pdfData}).promise;
+                document.getElementById('pageCount').textContent = pdfDoc.numPages;
+                pageNum = 1;
+                renderPage(pageNum);
+            } catch (error) {
+                console.error('Error loading PDF:', error);
+                addMessage('System', 'Error loading PDF: ' + error.message);
+            }
+        }
+
+        function renderPage(num) {
+            pageRendering = true;
+            pdfDoc.getPage(num).then(function(page) {
+                const viewport = page.getViewport({scale: scale});
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+
+                const renderContext = {
+                    canvasContext: ctx,
+                    viewport: viewport
+                };
+
+                return page.render(renderContext).promise;
+            }).then(function() {
+                pageRendering = false;
+                if (pageNumPending !== null) {
+                    renderPage(pageNumPending);
+                    pageNumPending = null;
+                }
+            }).catch(function(error) {
+                console.error('Error rendering page:', error);
+                pageRendering = false;
+            });
+
+            document.getElementById('pageNumber').value = num;
+        }
+
+        function queueRenderPage(num) {
+            if (pageRendering) {
+                pageNumPending = num;
+            } else {
+                renderPage(num);
+            }
+        }
+
+        function addMessage(sender, text, citations = null, sourceText = null) {
+            const messagesDiv = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender === 'User' ? 'user-message' : 'bot-message'}`;
+
+            messageDiv.textContent = text;
+
+            if (citations && sourceText) {
+                const citationDiv = document.createElement('div');
+                citationDiv.className = 'citation';
+
+                const pages = citations.split(',').map(p => p.trim());
+                pages.forEach(page => {
+                    const badge = document.createElement('span');
+                    badge.className = 'citation-page';
+                    badge.textContent = `Page ${page}`;
+                    badge.onclick = () => {
+                        navigateToPage(parseInt(page));
+                        sourceHighlighter.clearHighlights();
+                        sourceHighlighter.highlightSourceText(parseInt(page), sourceText, true);
+                    };
+                    citationDiv.appendChild(badge);
+                });
+
+                messageDiv.appendChild(citationDiv);
+            }
+
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            if (!message) return;
+
+            addMessage('User', message);
+            input.value = '';
+
+            toggleChatSpinner(true);
+
+            try {
+                if (currentMode === 'doc') {
+                    const response = await fetch('/ask', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ question: message })
+                    });
+
+                    const result = await response.json();
+                    if (result.status === 'success') {
+                        sourceHighlighter.clearHighlights();
+
+                        addMessage('Assistant', result.answer,
+                            result.sources.map(s => s.page).join(', '),
+                            result.sources[0].text);
+
+                        result.sources.forEach(source => {
+                            sourceHighlighter.highlightSourceText(
+                                parseInt(source.page),
+                                source.text
+                            );
+                        });
+                    } else {
+                        addMessage('System', 'Error: ' + result.error);
+                    }
+                } else {
+                    const response = await fetch('/search', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ query: message })
+                    });
+
+                    const result = await response.json();
+
+                    if (result.results && Array.isArray(result.results)) {
+                        const searchResults = document.createElement('div');
+                        searchResults.className = 'search-results';
+
+                        if (result.results.length === 0) {
+                            const noResults = document.createElement('div');
+                            noResults.className = 'search-result-item';
+                            noResults.innerHTML = '<p>No results found</p>';
+                            searchResults.appendChild(noResults);
+                        } else {
+                            result.results.forEach(item => {
+                                const resultItem = document.createElement('div');
+                                resultItem.className = 'search-result-item';
+                                const domain = new URL(item.url).hostname;
+                                resultItem.innerHTML = `
+                                    <h4>${item.title || 'Untitled'}</h4>
+                                    <p>${item.summary || 'No description available'}</p>
+                                    <a href="${item.url}" target="_blank">${domain}</a>
+                                `;
+                                searchResults.appendChild(resultItem);
+                            });
+                        }
+
+                        const messageDiv = document.createElement('div');
+                        messageDiv.className = 'message bot-message';
+                        messageDiv.appendChild(searchResults);
+                        document.getElementById('chatMessages').appendChild(messageDiv);
+                    } else if (result.error) {
+                        addMessage('System', `Search error: ${result.error}`);
+                    } else {
+                        addMessage('System', 'Error: Invalid response format');
+                    }
+                }
+
+                const chatMessages = document.getElementById('chatMessages');
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            } catch (error) {
+                addMessage('System', 'Error: ' + error.message);
+            } finally {
+                toggleChatSpinner(false);
+            }
+        }
+
+        function clearChat() {
+            document.getElementById('chatMessages').innerHTML = '';
+            document.getElementById('fileUpload').value = '';
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            pdfDoc = null;
+            document.getElementById('pageCount').textContent = '1';
+            document.getElementById('pageNumber').value = '1';
+            sourceHighlighter.clearHighlights();
+            addMessage('System', 'Chat history and document have been cleared.');
+
+            fetch('/clear-session', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            }).catch(error => {
+                console.error('Error clearing session:', error);
+            });
+        }
+
+        function navigateToPage(pageNum) {
+            if (!pdfDoc || pageNum < 1 || pageNum > pdfDoc.numPages) return;
+            pageNum = pageNum;
+            queueRenderPage(pageNum);
+        }
+
+        // Keyboard shortcuts handler
+        document.addEventListener('keydown', function(e) {
+            if (e.target.tagName === 'INPUT') return;
+
+            switch(e.key) {
+                case 'ArrowLeft':
+                    if (e.ctrlKey || e.metaKey) {
+                        document.getElementById('prevPage').click();
+                    }
+                    break;
+                case 'ArrowRight':
+                    if (e.ctrlKey || e.metaKey) {
+                        document.getElementById('nextPage').click();
+                    }
+                    break;
+                case '+':
+                    if (e.ctrlKey || e.metaKey) {
+                        zoomIn();
+                        e.preventDefault();
+                    }
+                    break;
+                case '-':
+                    if (e.ctrlKey || e.metaKey) {
+                        zoomOut();
+                        e.preventDefault();
+                    }
+                    break;
+                case '0':
+                    if (e.ctrlKey || e.metaKey) {
+                        resetZoom();
+                        e.preventDefault();
+                    }
+                    break;
+            }
+        });
+
+        // Zoom functions
+        function zoomIn() {
+            if (scale >= 3.0) return; // Maximum zoom level
+            scale *= 1.2;
+            queueRenderPage(pageNum);
+        }
+
+        function zoomOut() {
+            if (scale <= 0.5) return; // Minimum zoom level
+            scale /= 1.2;
+            queueRenderPage(pageNum);
+        }
+
+        function resetZoom() {
+            scale = 1.0;
+            queueRenderPage(pageNum);
+        }
+
+        // Initialize UI
+        setMode('doc');
+        addMessage('System', 'Welcome! Please upload a document to begin.');
+         </script>
+</body>
+</html>
