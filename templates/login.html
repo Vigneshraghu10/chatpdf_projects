@@ -1,0 +1,202 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Document Chat</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+    <div class="max-w-md w-full bg-white rounded-xl shadow-2xl p-8 transform transition-all duration-300 hover:scale-105">
+        <div class="text-center mb-8">
+            
+            <h2 class="text-3xl font-bold text-gray-800">Welcome Back!</h2>
+            <p class="text-gray-600 mt-2">Please sign in to continue</p>
+        </div>
+
+        <form id="loginForm" class="space-y-6">
+            <div class="relative">
+                <label for="username" class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                        <i class="fas fa-user"></i>
+                    </span>
+                    <input type="text" id="username" name="username" required
+                        class="pl-10 block w-full px-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+                        placeholder="Enter your username">
+                </div>
+            </div>
+            
+            <div class="relative">
+                <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                        <i class="fas fa-lock"></i>
+                    </span>
+                    <input type="password" id="password" name="password" required
+                        class="pl-10 block w-full px-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+                        placeholder="Enter your password">
+                    <button type="button" id="togglePassword" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <input type="checkbox" id="remember" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                    <label for="remember" class="ml-2 block text-sm text-gray-700">Remember me</label>
+                </div>
+                <a href="/forgot-password" class="text-sm text-blue-600 hover:text-blue-500 hover:underline">
+                    Forgot password?
+                </a>
+            </div>
+
+            <div id="errorMessage" class="hidden rounded-lg bg-red-100 p-4 text-red-700 text-sm">
+                <i class="fas fa-exclamation-circle mr-2"></i>
+                <span id="errorText"></span>
+            </div>
+
+            <button type="submit"
+                class="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-300">
+                <span id="buttonText">Sign in</span>
+                <div id="loadingSpinner" class="hidden ml-2">
+                    <i class="fas fa-circle-notch fa-spin"></i>
+                </div>
+            </button>
+
+            <div class="relative my-6">
+                <div class="absolute inset-0 flex items-center">
+                    <div class="w-full border-t border-gray-300"></div>
+                </div>
+                <div class="relative flex justify-center text-sm">
+                    <span class="px-2 bg-white text-gray-500">Or continue with</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <button type="button" class="flex items-center justify-center py-2 px-4 border border-gray-300 rounded-lg shadow-sm bg-white hover:bg-gray-50 transition-all duration-300">
+                    <i class="fab fa-google text-red-500 mr-2"></i>
+                    Google
+                </button>
+                <button type="button" class="flex items-center justify-center py-2 px-4 border border-gray-300 rounded-lg shadow-sm bg-white hover:bg-gray-50 transition-all duration-300">
+                    <i class="fab fa-github text-gray-900 mr-2"></i>
+                    GitHub
+                </button>
+            </div>
+
+            <div class="text-center mt-6">
+                <p class="text-sm text-gray-600">
+                    Don't have an account?
+                    <a href="/register" class="font-medium text-blue-600 hover:text-blue-500 hover:underline ml-1">
+                        Register here
+                    </a>
+                </p>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const loginForm = document.getElementById('loginForm');
+            const errorMessage = document.getElementById('errorMessage');
+            const errorText = document.getElementById('errorText');
+            const buttonText = document.getElementById('buttonText');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            const togglePassword = document.getElementById('togglePassword');
+            const passwordInput = document.getElementById('password');
+
+            // Toggle password visibility
+            togglePassword.addEventListener('click', () => {
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+                togglePassword.innerHTML = type === 'password' ? 
+                    '<i class="fas fa-eye"></i>' : 
+                    '<i class="fas fa-eye-slash"></i>';
+            });
+
+            // Form submission
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                // Show loading state
+                buttonText.textContent = 'Signing in...';
+                loadingSpinner.classList.remove('hidden');
+                errorMessage.classList.add('hidden');
+                
+                const username = document.getElementById('username').value;
+                const password = document.getElementById('password').value;
+                const remember = document.getElementById('remember').checked;
+                
+                try {
+                    const response = await fetch('/login', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ username, password, remember }),
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        // Add success animation
+                        buttonText.textContent = 'Success!';
+                        loadingSpinner.innerHTML = '<i class="fas fa-check"></i>';
+                        setTimeout(() => {
+                            window.location.href = data.redirect;
+                        }, 1000);
+                    } else {
+                        throw new Error(data.error || 'Login failed');
+                    }
+                } catch (error) {
+                    errorText.textContent = error.message || 'An error occurred. Please try again.';
+                    errorMessage.classList.remove('hidden');
+                    buttonText.textContent = 'Sign in';
+                    loadingSpinner.classList.add('hidden');
+
+                    // Shake animation for error
+                    loginForm.classList.add('animate-shake');
+                    setTimeout(() => {
+                        loginForm.classList.remove('animate-shake');
+                    }, 500);
+                }
+            });
+
+            // Add input validation
+            const inputs = loginForm.querySelectorAll('input[required]');
+            inputs.forEach(input => {
+                input.addEventListener('input', () => {
+                    if (input.value.trim()) {
+                        input.classList.add('border-green-500');
+                        input.classList.remove('border-red-500');
+                    } else {
+                        input.classList.add('border-red-500');
+                        input.classList.remove('border-green-500');
+                    }
+                });
+            });
+        });
+
+        // Add keypress support for enter key
+        document.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                document.querySelector('button[type="submit"]').click();
+            }
+        });
+    </script>
+
+    <style>
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-8px); }
+            75% { transform: translateX(8px); }
+        }
+        .animate-shake {
+            animation: shake 0.5s ease-in-out;
+        }
+    </style>
+</body>
+</html>

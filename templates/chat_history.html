@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Chat - Chat History</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex">
+                    <div class="flex-shrink-0 flex items-center">
+                        <i class="fas fa-comments text-indigo-600 text-2xl mr-2"></i>
+                        <h1 class="text-xl font-bold text-gray-800">Document Chat</h1>
+                    </div>
+                    <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
+                        <a href="/index" class="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium flex items-center">
+                            <i class="fas fa-home mr-2"></i>Home
+                        </a>
+                        <a href="/chat-history" class="border-b-2 border-indigo-500 text-indigo-600 px-3 py-2 rounded-md text-sm font-medium flex items-center">
+                            <i class="fas fa-history mr-2"></i>Chat History
+                        </a>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="relative">
+                        <input type="text" id="searchInput" placeholder="Search conversations..." 
+                               class="rounded-lg border-gray-300 focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 pr-3 py-2 text-sm">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-search text-gray-400"></i>
+                        </div>
+                    </div>
+                    <button id="logoutBtn" class="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium flex items-center">
+                        <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div class="px-4 py-6 sm:px-0">
+            <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+                <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h2 class="text-lg leading-6 font-medium text-gray-900">Chat History</h2>
+                            <p class="mt-1 max-w-2xl text-sm text-gray-500">View and manage your conversation history</p>
+                        </div>
+                        <div class="flex space-x-3">
+                            <button id="exportBtn" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                <i class="fas fa-download mr-2"></i>Export
+                            </button>
+                            <button id="filterBtn" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                <i class="fas fa-filter mr-2"></i>Filter
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="border-t border-gray-200">
+                    {% if history_data %}
+                        {% for document in history_data %}
+                            <div class="bg-white overflow-hidden mb-6 hover:bg-gray-50 transition-colors duration-150">
+                                <div class="px-4 py-5 sm:px-6 bg-gray-50 cursor-pointer" onclick="toggleDocument('doc-{{ loop.index }}')">
+                                    <div class="flex justify-between items-center">
+                                        <div class="flex items-center space-x-3">
+                                            <i class="fas fa-file-alt text-indigo-500 text-xl"></i>
+                                            <h3 class="text-lg leading-6 font-medium text-gray-900">{{ document.document_name }}</h3>
+                                        </div>
+                                        <div class="flex items-center space-x-2">
+                                            <span class="text-sm text-gray-500">{{ document.history|length }} messages</span>
+                                            <i class="fas fa-chevron-down text-gray-400 transform transition-transform duration-200" id="icon-doc-{{ loop.index }}"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="doc-{{ loop.index }}" class="hidden">
+                                    <div class="px-4 py-5 sm:p-6 space-y-6">
+                                        {% for chat in document.history %}
+                                            <div class="chat-item transform transition-transform duration-200 hover:scale-[1.01]">
+                                                <!-- Question -->
+                                                <div class="flex space-x-3 mb-4">
+                                                    <div class="flex-shrink-0">
+                                                        <div class="h-10 w-10 rounded-full bg-indigo-500 flex items-center justify-center">
+                                                            <i class="fas fa-user text-white"></i>
+                                                        </div>
+                                                    </div>
+                                                    <div class="flex-1 bg-gray-50 rounded-lg p-4">
+                                                        <div class="flex justify-between items-start">
+                                                            <p class="text-sm font-medium text-gray-900">Question</p>
+                                                            <span class="text-xs text-gray-500">{{ chat.timestamp }}</span>
+                                                        </div>
+                                                        <p class="mt-2 text-sm text-gray-700">{{ chat.question }}</p>
+                                                    </div>
+                                                </div>
+                                                <!-- Answer -->
+                                                <div class="flex space-x-3 pl-13">
+                                                    <div class="flex-shrink-0">
+                                                        <div class="h-10 w-10 rounded-full bg-green-500 flex items-center justify-center">
+                                                            <i class="fas fa-robot text-white"></i>
+                                                        </div>
+                                                    </div>
+                                                    <div class="flex-1 bg-green-50 rounded-lg p-4">
+                                                        <p class="text-sm font-medium text-gray-900">Answer</p>
+                                                        <p class="mt-2 text-sm text-gray-700">{{ chat.answer }}</p>
+                                                        <div class="mt-3 flex justify-end space-x-2">
+                                                            <button class="text-xs text-gray-500 hover:text-gray-700" onclick="copyText(this)">
+                                                                <i class="fas fa-copy mr-1"></i>Copy
+                                                            </button>
+                                                            <button class="text-xs text-gray-500 hover:text-gray-700">
+                                                                <i class="fas fa-share mr-1"></i>Share
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-12">
+                            <i class="fas fa-history text-gray-400 text-4xl mb-4"></i>
+                            <p class="text-gray-500">No chat history available yet.</p>
+                            <a href="/index" class="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">
+                                Start a New Chat
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Toggle document sections
+        function toggleDocument(docId) {
+            const content = document.getElementById(docId);
+            const icon = document.getElementById('icon-' + docId);
+            content.classList.toggle('hidden');
+            icon.classList.toggle('rotate-180');
+        }
+
+        // Search functionality
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const chatItems = document.getElementsByClassName('chat-item');
+            
+            Array.from(chatItems).forEach(item => {
+                const text = item.textContent.toLowerCase();
+                item.style.display = text.includes(searchTerm) ? 'block' : 'none';
+            });
+        });
+
+        // Copy text functionality
+        function copyText(button) {
+            const textToCopy = button.closest('.flex-1').querySelector('p:nth-child(2)').textContent;
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                const originalText = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-check mr-1"></i>Copied!';
+                setTimeout(() => {
+                    button.innerHTML = originalText;
+                }, 2000);
+            });
+        }
+
+        // Export functionality
+        document.getElementById('exportBtn').addEventListener('click', () => {
+            const data = JSON.stringify(window.history_data, null, 2);
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'chat_history.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+
+        // Logout functionality
+        document.getElementById('logoutBtn').addEventListener('click', async () => {
+            try {
+                const response = await fetch('/logout');
+                if (response.ok) {
+                    window.location.href = '/login';
+                }
+            } catch (error) {
+                console.error('Logout failed:', error);
+            }
+        });
+    </script>
+</body>
+</html>

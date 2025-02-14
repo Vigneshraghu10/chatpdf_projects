@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document Chat Interface</title>
+    <title>PDF Chat </title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -358,6 +359,57 @@
                 width: 100%;
             }
         }
+        /* Global styles */
+
+
+/* Center the container */
+.container {
+    max-width: 500px;
+}
+
+
+.card:hover {
+    transform: scale(1.02);
+}
+
+/* Header styling */
+h3 {
+    font-weight: 600;
+    margin-left: 60px;
+    margin-bottom: 30px;
+}
+
+/* Button styles */
+.btn {
+    font-weight: 500;
+    padding: 10px 16px;
+    border-radius: 8px;
+    transition: all 0.3s ease-in-out;
+}
+
+/* Button hover effects */
+.btn-outline-info:hover {
+    background-color: #17a2b8;
+    color: #fff;
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
+}
+
+.btn-primary:hover {
+    background-color: #0056b3;
+}
+
+.btn-success:hover {
+    background-color: #218838;
+}
+
+/* Icons inside buttons */
+.btn i {
+    margin-right: 5px;
+}
+
     </style>
 </head>
 <body>
@@ -365,10 +417,32 @@
         <div class="logo">
             <img src="https://smartificia.com/assets/img/smartificia-logo.png" alt="Your Company Logo" style="width: 300px; height: auto;">
         </div>
-        <div class="page-title">Smart Docs Chat</div>
+        <div class="page-title">Paper Mind</div>
+        
+        <div class="container mt-4 text-center" style="max-width: 500px;" top="50%">
+            {% if current_user.is_authenticated %}
+                <div class="card shadow-sm p-4">
+                    <h3 class="text-primary">Welcome, {{ current_user.username }}!👋</h3>
+                    <div class="mt-3">
+                        <a href="/chat-history" class="btn btn-outline-info me-2">📜 View Chat History</a>
+                        <a href="/logout" class="btn btn-danger">🚪 Logout</a>
+                    </div>
+                </div>
+            {% else %}
+                <div class="card shadow-sm p-4">
+                    <h3 class="text-danger">🔐 Access Restricted</h3>
+                    <p class="text-muted"></p>
+                    <div class="mt-3">
+                        <a href="/login" class="btn btn-primary me-2">🔑 Login</a>
+                        <a href="/register" class="btn btn-success">📝 Register</a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+        
     </header>
 
-    <div class="main-container">
+    <div class="main-container"> 
         <div class="document-section">
             <div class="upload-section">
                 <input type="file" id="fileUpload" accept=".pdf,.docx" style="display: none;">
@@ -954,6 +1028,8 @@
         // Initialize UI
         setMode('doc');
         addMessage('System', 'Welcome! Please upload a document to begin.');
+
+        
          </script>
 </body>
 </html>
