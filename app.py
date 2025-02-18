@@ -310,14 +310,14 @@ class DocumentProcessor:
         self.embedding_model = HuggingFaceEmbeddings()
         self.conversation_chain = None
         self.vectorstore = None
-        self.current_document_id = None
+        self.current_document_id = None  # Explicitly set to None
         self.chat_history = []
         self.text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=1000,
             chunk_overlap=200,
             length_function=len
         )
-        self.is_document_loaded = False
+        self.is_document_loaded = False  # Explicitly set to False
         self.last_access = time.time()
         self.current_pdf_path = None
         self.page_mapping = {}
@@ -613,12 +613,16 @@ class DocumentProcessor:
         Perform web search using RateLimitedSearcher
         """
         try:
+            # Check if document is loaded before proceeding
+            if not self.is_document_loaded or not self.current_document_id:
+                raise ValueError("No document loaded. Please load a document before performing web search.")
+                
             self.last_access = time.time()
             searcher = RateLimitedSearcher()
             return searcher.search(query)
         except Exception as e:
             logger.error(f"Web search error: {str(e)}")
-            return []
+            raise  
 
 # Session management
 processors = {}
@@ -972,23 +976,37 @@ def web_search_route():
             return jsonify({'results': [], 'error': 'No query provided'}), 400
 
         processor = get_processor()
+        
+        # Check if a document is loaded
+        if not processor.is_document_loaded or not processor.current_document_id:
+            return jsonify({
+                'results': [],
+                'error': 'Please load a document before performing web search'
+            }), 400
+
         results = processor.web_search(query)
 
-        # Store search history
-        search_history = WebSearchHistory(
-            document_id=processor.current_document_id,
-            user_id=current_user.id,
-            session_id=processor.session_id,
-            search_query=query,
-            search_results=json.dumps(results)
-        )
-        db.session.add(search_history)
-        db.session.commit()
+        try:
+            # Store search history only if we have a valid document_id
+            search_history = WebSearchHistory(
+                document_id=processor.current_document_id,  # This should now be valid
+                user_id=current_user.id,
+                session_id=processor.session_id,
+                search_query=query,
+                search_results=json.dumps(results)
+            )
+            db.session.add(search_history)
+            db.session.commit()
+        except Exception as db_error:
+            logger.warning(f"Failed to save search history: {str(db_error)}")
+            # Don't fail the whole request if just the history save fails
+            db.session.rollback()
 
         return jsonify({'results': results})
 
     except Exception as e:
         logger.error(f"Error during web search: {str(e)}")
+        db.session.rollback()
         return jsonify({'results': [], 'error': str(e)}), 500
     
 @app.route('/download/<filename>')
