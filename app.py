@@ -50,18 +50,18 @@ CORS(app, resources={r"/*": {
     "supports_credentials": True
 }})
 
-# Load environment variables
+
 load_dotenv()
 
-# Configuration
+
 class Config:
     UPLOAD_FOLDER = Path('uploads')
     TEMP_FOLDER = Path('temp')
     ALLOWED_EXTENSIONS = {'pdf', 'docx'}
-    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size
+    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  
     GROQ_API_KEY = os.getenv('GROQ_API_KEY')
-    SESSION_TIMEOUT = 3600  # 1 hour in seconds
-    CLEANUP_INTERVAL = 300  # 5 minutes in seconds
+    SESSION_TIMEOUT = 3600  
+    CLEANUP_INTERVAL = 300  
     
     # Database Configuration
     DB_USER = os.getenv('DB_USER', 'root')
@@ -170,9 +170,9 @@ def init_tables():
         try:
             # Create all tables
             db.create_all()
-            print("✅ Database tables created successfully!")
+            print(" Database tables created successfully!")
         except Exception as e:
-            print(f"❌ Error creating tables: {e}")
+            print(f" Error creating tables: {e}")
             raise
 
 def init_db():
@@ -198,7 +198,7 @@ def init_db():
         with app.app_context():
             db.create_all()
         
-        print("✅ Database initialized successfully!")
+        print(" Database initialized successfully!")
         
     except Exception as e:
         print(f"❌ Error during database initialization: {e}")
@@ -210,7 +210,7 @@ def verify_db_connection():
         with app.app_context():
             # Try to query the documents table
             DocumentModel.query.first()
-            print("✅ Database connection verified!")
+            print(" Database connection verified!")
             return True
     except Exception as e:
         print(f"❌ Database connection error: {e}")
@@ -1054,4 +1054,4 @@ if __name__ == '__main__':
         app.run(debug=True, port=8080)
         
     except Exception as e:
-        print(f"❌ Application startup error: {e}")
+        print(f" Application startup error: {e}")
