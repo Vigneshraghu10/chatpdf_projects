@@ -58,21 +58,22 @@ class Config:
     UPLOAD_FOLDER = Path('uploads')
     TEMP_FOLDER = Path('temp')
     ALLOWED_EXTENSIONS = {'pdf', 'docx'}
-    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  
+    MAX_CONTENT_LENGTH = 16 * 1024 * 1024
     GROQ_API_KEY = os.getenv('GROQ_API_KEY')
-    SESSION_TIMEOUT = 3600  
-    CLEANUP_INTERVAL = 300  
-    
+    SESSION_TIMEOUT = 3600
+    CLEANUP_INTERVAL = 300
+
     # Database Configuration
     DB_USER = os.getenv('DB_USER', 'root')
-    DB_PASSWORD = urllib.parse.quote_plus(os.getenv('DB_PASSWORD', 'STPLvicky@10'))
-    DB_HOST = os.getenv('DB_HOST', 'localhost')
+    DB_PASSWORD = urllib.parse.quote_plus(os.getenv('DB_PASSWORD', 'STPL123'))
+    DB_HOST = os.getenv('DB_HOST', '127.0.0.1')
     DB_PORT = os.getenv('DB_PORT', '3306')
     DB_NAME = os.getenv('DB_NAME', 'document_chat')
-    
+
     SQLALCHEMY_DATABASE_URI = f'mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {
+
         'pool_size': 10,
         'pool_recycle': 3600,
         'pool_pre_ping': True
@@ -94,25 +95,25 @@ logger = logging.getLogger(__name__)
 # Database Models
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
-    
+
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
+
     documents = db.relationship('DocumentModel', backref='user', lazy=True)
     chat_history = db.relationship('ChatHistory', backref='user', lazy=True)
-    
+
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
-        
+
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
 class DocumentModel(db.Model):
     __tablename__ = 'documents'
-    
+
     id = db.Column(db.String(36), primary_key=True)
     filename = db.Column(db.String(255), nullable=False)
     filepath = db.Column(db.String(255), nullable=False)
@@ -122,14 +123,14 @@ class DocumentModel(db.Model):
     chroma_collection = db.Column(db.String(100), nullable=False)
     file_size = db.Column(db.Integer, nullable=True)
     mime_type = db.Column(db.String(100), nullable=True)
-    
+
     __table_args__ = (
         db.Index('idx_session_upload', session_id, upload_date),
     )
 
 class ChatHistory(db.Model):
     __tablename__ = 'chat_history'
-    
+
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     document_id = db.Column(db.String(36), db.ForeignKey('documents.id', ondelete='CASCADE'), nullable=False)
     session_id = db.Column(db.String(36), nullable=False, index=True)
@@ -137,9 +138,9 @@ class ChatHistory(db.Model):
     question = db.Column(db.Text, nullable=False)
     answer = db.Column(db.Text, nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-    
+
     document = db.relationship('DocumentModel', backref=db.backref('chat_history', lazy=True))
-    
+
     __table_args__ = (
         db.Index('idx_document_timestamp', document_id, timestamp),
         db.Index('idx_session_document', session_id, document_id),
@@ -147,7 +148,7 @@ class ChatHistory(db.Model):
 
 class WebSearchHistory(db.Model):
     __tablename__ = 'web_search_history'
-    
+
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     document_id = db.Column(db.String(36), db.ForeignKey('documents.id', ondelete='CASCADE'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
@@ -155,7 +156,7 @@ class WebSearchHistory(db.Model):
     search_query = db.Column(db.Text, nullable=False)
     search_results = db.Column(db.Text, nullable=True)  # You can store search result summaries or URLs
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-    
+
     document = db.relationship('DocumentModel', backref=db.backref('web_search_history', lazy=True))
     user = db.relationship('User', backref=db.backref('web_search_history', lazy=True))
 
@@ -179,27 +180,27 @@ def init_db():
     try:
         # Create database engine without database name first
         base_engine = create_engine(f"mysql+pymysql://{Config.DB_USER}:{Config.DB_PASSWORD}@{Config.DB_HOST}:{Config.DB_PORT}/")
-        
+
         # Try to create database if it doesn't exist
         with base_engine.connect() as conn:
             # Drop the existing database to ensure clean slate
             conn.execute(text("DROP DATABASE IF EXISTS document_chat"))
             conn.commit()
-            
+
             # Create the database
             conn.execute(text("CREATE DATABASE document_chat"))
             conn.commit()
-            
+
             # Use the database
             conn.execute(text("USE document_chat"))
             conn.commit()
-        
+
         # Create all tables with the new schema
         with app.app_context():
             db.create_all()
-        
+
         print(" Database initialized successfully!")
-        
+
     except Exception as e:
         print(f"❌ Error during database initialization: {e}")
         raise
@@ -237,15 +238,15 @@ class RateLimitedSearcher:
             response = self.session.get(url, timeout=5)
             response.raise_for_status()
             soup = BeautifulSoup(response.text, 'html.parser')
-            
+
             meta_desc = soup.find('meta', attrs={'name': 'description'})
             if meta_desc and meta_desc.get('content'):
                 return meta_desc['content']
-            
+
             first_p = soup.find('p')
             if first_p:
                 return first_p.get_text().strip()
-            
+
             return None
         except Exception as e:
             logger.warning(f"Error fetching page description: {str(e)}")
@@ -266,41 +267,41 @@ class RateLimitedSearcher:
                 region='wt-wt',
                 safesearch='moderate'
             )
-            
+
             raw_results = list(itertools.islice(search_generator, 5))
-            
+
             for result in raw_results:
                 try:
                     url = result.get('href') or result.get('url')
                     if not url:
                         continue
-                    
+
                     title = self.clean_text(result.get('title', ''))
                     if not title:
                         parsed_url = urlparse(url)
                         title = parsed_url.netloc
-                    
+
                     description = self.clean_text(result.get('body', '') or result.get('snippet', ''))
                     if not description:
                         description = self.clean_text(self._fetch_page_description(url))
                     if not description:
                         description = f"Web page from {urlparse(url).netloc}"
-                    
+
                     results.append({
                         "url": url,
                         "title": title,
                         "summary": description
                     })
-                    
+
                     sleep(uniform(0.5, 1.5))
-                    
+
                 except Exception as e:
                     logger.warning(f"Error processing search result: {str(e)}")
                     continue
-                    
+
         except Exception as e:
             logger.error(f"Search error: {str(e)}")
-            
+
         return results
 
 class DocumentProcessor:
@@ -341,7 +342,7 @@ class DocumentProcessor:
 
         page = self.doc_pages[page_num]
         text_instances = page.search_for(text)
-        
+
         coordinates = []
         for inst in text_instances:
             coordinates.append({
@@ -350,7 +351,7 @@ class DocumentProcessor:
                 'width': inst.x1 - inst.x0,
                 'height': inst.y1 - inst.y0
             })
-            
+
         return coordinates
 
     def process_document(self, file_path, original_filename):
@@ -444,16 +445,16 @@ class DocumentProcessor:
     def _setup_conversation_chain(self, documents, collection_name):
         try:
             texts = self.text_splitter.split_documents(documents)
-            
+
             self.vectorstore = Chroma.from_documents(
                 documents=texts,
                 embedding=self.embedding_model,
                 persist_directory=str(self.persist_directory),
                 collection_name=collection_name
             )
-            
+
             self.vectorstore.persist()
-            
+
             llm = self._initialize_llm()
             self.conversation_chain = ConversationalRetrievalChain.from_llm(
                 llm=llm,
@@ -461,7 +462,7 @@ class DocumentProcessor:
                 return_source_documents=True,
                 verbose=True
             )
-            
+
         except Exception as e:
             logger.error(f"Conversation chain setup error: {str(e)}")
             raise
@@ -616,13 +617,13 @@ class DocumentProcessor:
             # Check if document is loaded before proceeding
             if not self.is_document_loaded or not self.current_document_id:
                 raise ValueError("No document loaded. Please load a document before performing web search.")
-                
+
             self.last_access = time.time()
             searcher = RateLimitedSearcher()
             return searcher.search(query)
         except Exception as e:
             logger.error(f"Web search error: {str(e)}")
-            raise  
+            raise
 
 # Session management
 processors = {}
@@ -631,10 +632,10 @@ processor_lock = threading.Lock()
 def get_processor():
     if 'session_id' not in session:
         session['session_id'] = str(uuid4())
-    
+
     session_id = session['session_id']
     user_id = current_user.id if current_user.is_authenticated else None
-    
+
     with processor_lock:
         if session_id not in processors:
             processors[session_id] = DocumentProcessor(session_id, user_id)
@@ -655,71 +656,71 @@ def register():
     elif request.method == 'POST':
         try:
             data = request.get_json()
-            
+
             # Validate required fields
             if not all(key in data for key in ['username', 'email', 'password']):
                 return jsonify({'error': 'Missing required fields'}), 400
-            
+
             # Check if username already exists
             if User.query.filter_by(username=data['username']).first():
                 return jsonify({'error': 'Username already exists'}), 400
-            
+
             # Check if email already exists
             if User.query.filter_by(email=data['email']).first():
                 return jsonify({'error': 'Email already exists'}), 400
-            
+
             # Create new user
             new_user = User(
                 username=data['username'],
                 email=data['email']
             )
             new_user.set_password(data['password'])
-            
+
             # Add to database
             db.session.add(new_user)
             db.session.commit()
-            
+
             return jsonify({"message": "Registration successful"})
-            
+
         except Exception as e:
             db.session.rollback()
             logger.error(f"Registration error: {str(e)}")
             return jsonify({'error': str(e)}), 500
-        
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
         return redirect(url_for('index'))
-        
+
     if request.method == 'POST':
         try:
             data = request.get_json()
             logger.debug(f"Login attempt for username: {data.get('username', 'not provided')}")
-            
+
             if not data:
                 logger.error("No data received in login request")
                 return jsonify({'error': 'No data provided'}), 400
-            
+
             if not all(key in data for key in ['username', 'password']):
                 logger.error("Missing required login fields")
                 return jsonify({'error': 'Username and password are required'}), 400
-            
+
             username = data['username']
             password = data['password']
-            
+
             if not username or not password:
                 logger.error("Empty username or password")
                 return jsonify({'error': 'Username and password cannot be empty'}), 400
-            
+
             user = User.query.filter_by(username=username).first()
             logger.debug(f"User found: {user is not None}")
-            
+
             if user and user.check_password(password):
                 login_user(user)
                 session['user_id'] = user.id
                 session['username'] = user.username
                 logger.info(f"Successful login for user: {username}")
-                
+
                 response = make_response(jsonify({
                     'message': 'Logged in successfully',
                     'user': {
@@ -732,11 +733,11 @@ def login():
             else:
                 logger.warning(f"Failed login attempt for username: {username}")
                 return jsonify({'error': 'Invalid username or password'}), 401
-            
+
         except Exception as e:
             logger.error(f"Login error: {str(e)}", exc_info=True)
             return jsonify({'error': 'An error occurred during login'}), 500
-    
+
     return render_template('login.html')
 
 @app.route('/logout')
@@ -792,7 +793,7 @@ def create_templates():
 
     if not (templates_dir / 'chat_history.html').exists():
         (templates_dir / 'chat_history.html').write_text(chat_history_template)
-   
+
     document = {
         "document_name": "Sample Document",
         "document_url": "https://your-storage-service-link/sample-document.pdf"
@@ -805,7 +806,7 @@ def create_templates():
 # Call the function
 create_templates()
 
-    
+
 
 # Routes
 @app.route('/')
@@ -846,7 +847,7 @@ def view_chat_history():
     try:
         # Get all documents for the current user
         documents = DocumentModel.query.filter_by(user_id=current_user.id).all()
-        
+
         # Get chat history for all documents
         history_data = []
         for doc in documents:
@@ -854,7 +855,7 @@ def view_chat_history():
                 document_id=doc.id,
                 user_id=current_user.id
             ).order_by(ChatHistory.timestamp.desc()).all()
-            
+
             if chat_history:
                 history_data.append({
                     'document_name': doc.filename,
@@ -865,9 +866,9 @@ def view_chat_history():
                         'timestamp': chat.timestamp.strftime('%Y-%m-%d %H:%M:%S')
                     } for chat in chat_history]
                 })
-        
+
         return render_template('chat_history.html', history_data=history_data)
-        
+
     except Exception as e:
         logger.error(f"Error retrieving chat history: {str(e)}")
         return jsonify({'error': str(e)}), 500
@@ -878,26 +879,26 @@ def get_document_chat_history(document_id):
     try:
         # Verify the document belongs to the current user
         document = DocumentModel.query.filter_by(
-            id=document_id, 
+            id=document_id,
             user_id=current_user.id
         ).first()
-        
+
         if not document:
             return jsonify({'error': 'Document not found'}), 404
-            
+
         chat_history = ChatHistory.query.filter_by(
             document_id=document_id,
             user_id=current_user.id
         ).order_by(ChatHistory.timestamp.desc()).all()
-        
+
         history_data = [{
             'question': chat.question,
             'answer': chat.answer,
             'timestamp': chat.timestamp.strftime('%Y-%m-%d %H:%M:%S')
         } for chat in chat_history]
-        
+
         return jsonify({'history': history_data})
-        
+
     except Exception as e:
         logger.error(f"Error retrieving document chat history: {str(e)}")
         return jsonify({'error': str(e)}), 500
@@ -911,20 +912,20 @@ def get_search_history():
         history = WebSearchHistory.query.filter_by(
             user_id=current_user.id
         ).order_by(WebSearchHistory.timestamp.desc()).all()
-        
+
         history_data = [{
             'search_query': item.search_query,
             'search_results': json.loads(item.search_results) if item.search_results else None,
             'timestamp': item.timestamp.isoformat(),
             'document_id': item.document_id
         } for item in history]
-        
+
         return jsonify({'history': history_data})
-        
+
     except Exception as e:
         logger.error(f"Error retrieving search history: {str(e)}")
         return jsonify({'error': str(e)}), 500
-    
+
 
 @app.route('/documents/<document_id>/load', methods=['POST'])
 def load_document(document_id):
@@ -976,7 +977,7 @@ def web_search_route():
             return jsonify({'results': [], 'error': 'No query provided'}), 400
 
         processor = get_processor()
-        
+
         # Check if a document is loaded
         if not processor.is_document_loaded or not processor.current_document_id:
             return jsonify({
@@ -1008,7 +1009,7 @@ def web_search_route():
         logger.error(f"Error during web search: {str(e)}")
         db.session.rollback()
         return jsonify({'results': [], 'error': str(e)}), 500
-    
+
 @app.route('/download/<filename>')
 def download_file(filename):
     try:
@@ -1041,17 +1042,17 @@ if __name__ == '__main__':
     try:
         # Initialize database and tables
         init_db()
-        
+
         # Verify database connection
         if not verify_db_connection():
             raise Exception("Database verification failed")
-        
+
         # Ensure the upload and temp directories exist
         Config.UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
         Config.TEMP_FOLDER.mkdir(parents=True, exist_ok=True)
-        
+
         # Start the Flask application
         app.run(debug=True, port=8080)
-        
+
     except Exception as e:
         print(f" Application startup error: {e}")
